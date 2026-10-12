@@ -38,6 +38,10 @@ def main():
     pencere.show_all()
     while Gtk.events_pending():
         Gtk.main_iteration()
+    # Oda artik bos basladigi icin nmap-01'i acikca ata (radyo on-secili gelir).
+    pencere.siradaki_dugmesi.clicked()
+    while Gtk.events_pending():
+        Gtk.main_iteration()
 
     kod, sifre = pencere.oda.oda_kodu, pencere.oda.sifre
     print(f"[TEST] Öğretmen nmap-01 açtı. Oda: {kod}/{sifre}")

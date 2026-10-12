@@ -1,7 +1,7 @@
 """
 BİREYSEL/SINIF MOD AYRIMI TESTİ.
 
-- Uygulama açılınca mod seçim ekranı gösterilmeli
+- Uygulama açılınca giriş ekranı gösterilmeli (Misafir -> mod seçimi)
 - 'Bireysel Pratik' -> hiç ağa bağlanmadan rastgele bir görev başlamalı
 - 'Sınıfa Katıl' -> mevcut oda kodu/şifre akışına gitmeli
 - 'Geri' butonları mod seçimine dönmeli
@@ -27,8 +27,16 @@ def main():
         Gtk.main_iteration()
 
     print("[TEST] Açılış sayfası:", pencere.yigin.get_visible_child_name())
+    assert pencere.yigin.get_visible_child_name() == "giris"
+    print("✓ Uygulama giriş ekranıyla açılıyor")
+
+    # Misafir olarak devam et -> mod seçim ekranı
+    pencere.misafir_dugmesi.clicked()
+    while Gtk.events_pending():
+        Gtk.main_iteration()
     assert pencere.yigin.get_visible_child_name() == "mod_secimi"
-    print("✓ Uygulama mod seçim ekranıyla açılıyor")
+    assert pencere.aktif_kullanici is None
+    print("✓ Misafir seçimi mod seçim ekranına götürdü (aktif_kullanici=None)")
 
     # --- Sınıf modu: Geri butonu doğru çalışıyor mu ---
     print("\n[TEST] 'Sınıfa Katıl' -> 'Geri' -> mod seçime dönmeli")

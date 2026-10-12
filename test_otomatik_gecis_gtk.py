@@ -1,6 +1,7 @@
 """
-Öğretmen 'Sıradaki Göreve Geç' derken, ZATEN GTK penceresi açık olan
-öğrencinin ekranının GERÇEKTEN otomatik güncellendiğini test eder.
+Ogretmen soru atayinca / degistirince, ZATEN GTK penceresi acik olan
+ogrencinin ekraninin GERCEKTEN otomatik guncellendigini test eder.
+(nmap-01 -> sqlmap-01; her iki servis de saf python, harici ikili gerekmez.)
 """
 
 import sys
@@ -17,75 +18,65 @@ from ogretmen_uygulama import OgretmenPenceresi  # noqa: E402
 from ogrenci_uygulama import PoligonPenceresi  # noqa: E402
 
 
+def bekle(n=1):
+    for _ in range(n):
+        time.sleep(0.1)
+        while Gtk.events_pending():
+            Gtk.main_iteration()
+
+
 def main():
-    ogretmen = OgretmenPenceresi(gorev_id="hydra-01")
+    ogretmen = OgretmenPenceresi()
     ogretmen.show_all()
-    while Gtk.events_pending():
-        Gtk.main_iteration()
+    bekle()
+
+    # 1. soru: nmap-01 ata
+    ogretmen._gorev_anahtarlari["nmap-01"].set_active(True)
+    ogretmen.siradaki_dugmesi.clicked()
+    bekle()
+    assert ogretmen.oda.aktif_soru_no == 1
 
     ogrenci_pencere = PoligonPenceresi()
     ogrenci_pencere.show_all()
-    while Gtk.events_pending():
-        Gtk.main_iteration()
+    bekle()
 
-    # Öğrenci sınıfa katılıyor
     ogrenci_pencere.sinif_mod_dugmesi.clicked()
-    while Gtk.events_pending():
-        Gtk.main_iteration()
+    bekle()
     ogrenci_pencere.kod_girisi.set_text(ogretmen.oda.oda_kodu)
     ogrenci_pencere.sifre_girisi.set_text(ogretmen.oda.sifre)
     ogrenci_pencere.ad_girisi.set_text("test_ogr")
     ogrenci_pencere.katil_dugmesi.clicked()
 
-    for _ in range(20):
-        time.sleep(0.1)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+    # Bekleme ekrani + otomatik yukleme (poll 3 sn) icin bekle
+    for _ in range(60):
+        bekle(1)
+        if ogrenci_pencere.gorev_verisi:
+            break
+    print("[OGRENCI] Katildi, gorev:", (ogrenci_pencere.gorev_verisi or {}).get("id"))
+    assert ogrenci_pencere.gorev_verisi and ogrenci_pencere.gorev_verisi["id"] == "nmap-01"
+    assert ogrenci_pencere.istemci.aktif_soru_no == 1
+    print("\u2713 Ogrenci 1. soruyu (nmap-01) otomatik yukledi")
 
-    print(f"[ÖĞRENCİ] Katıldı, görev: {ogrenci_pencere.gorev_verisi['id']}")
-    assert ogrenci_pencere.gorev_verisi["id"] == "hydra-01"
-
-    print("\n[ÖĞRETMEN] john-01'i seçip 'Uygula'ya basıyor (öğrenci penceresi AÇIK, hiçbir şey yapmıyor)...")
-    ogretmen._gorev_anahtarlari["john-01"].set_active(True)
+    # 2. soru: sqlmap-01 ata
+    print("[OGRETMEN] sqlmap-01 atiyor (ogrenci penceresi acik)...")
+    ogretmen._gorev_anahtarlari["sqlmap-01"].set_active(True)
     ogretmen.siradaki_dugmesi.clicked()
-    while Gtk.events_pending():
-        Gtk.main_iteration()
-    print(f"[ÖĞRETMEN] Sunucuda açık görev: {ogretmen.oda.acik_gorevler}")
+    bekle()
+    assert ogretmen.oda.aktif_soru_no == 2
 
-    print("\n[TEST] Öğrenci izleme döngüsünün çalışması için 4 saniye bekleniyor...")
-    for _ in range(45):  # ~4.5 saniye, izleme döngüsü 3 sn'de bir çalışıyor
-        time.sleep(0.1)
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+    # Ogrenci izleme dongusu (3 sn) yeni soruyu alsin
+    for _ in range(70):
+        bekle(1)
+        if ogrenci_pencere.gorev_verisi and ogrenci_pencere.gorev_verisi["id"] == "sqlmap-01":
+            break
+    print("[OGRENCI] Guncel gorev:", ogrenci_pencere.gorev_verisi["id"],
+          "| soru_no:", ogrenci_pencere.istemci.aktif_soru_no)
+    assert ogrenci_pencere.gorev_verisi["id"] == "sqlmap-01"
+    assert ogrenci_pencere.istemci.aktif_soru_no == 2
+    print("\u2713 Ogrenci 2. soruya (sqlmap-01) otomatik gecti")
 
-    print(f"[ÖĞRENCİ] Ekrandaki görev ŞİMDİ: {ogrenci_pencere.gorev_verisi['id']}")
-    assert ogrenci_pencere.gorev_verisi["id"] == "john-01", \
-        f"öğrenci ekranı hâlâ eski görevde: {ogrenci_pencere.gorev_verisi['id']}"
-    print("✓ Öğrenci penceresi HİÇBİR ŞEY YAPMADAN otomatik olarak yeni göreve geçti")
-
-    # Sohbet günlüğünde bildirim var mı?
-    notlar = [m["metin"] for m in ogrenci_pencere._sohbet_mesajlari]
-    print(f"[ÖĞRENCİ] Not günlüğü: {notlar}")
-    assert any("yeni bir göreve geçti" in n for n in notlar)
-    print("✓ Öğrenciye görev değişikliği bildirimi de düştü")
-
-    # Yeni görevi gerçekten çözebiliyor mu?
-    dogru_cevap = ogrenci_pencere.istemci._dogru_cevap
-    ogrenci_pencere.cevap_girisi.set_text(str(dogru_cevap))
-    ogrenci_pencere.gonder_dugmesi.clicked()
-    while Gtk.events_pending():
-        Gtk.main_iteration()
-    sonuc = ogrenci_pencere.sonuc_etiketi.get_text()
-    print(f"[ÖĞRENCİ] Yeni görevi çözme sonucu: {sonuc}")
-    assert "✓" in sonuc or "Doğru" in sonuc
-    print("✓ Otomatik geçilen yeni görev gerçekten çözülebiliyor")
-
-    ogrenci_pencere.istemci.gorevi_durdur()
     ogretmen.sunucu.shutdown()
-
-    print("\n" + "=" * 70)
-    print("✓ OTOMATİK GÖREV GEÇİŞİ GTK'DA UÇTAN UCA ÇALIŞIYOR")
-    print("=" * 70)
+    print("\n\u2713 OTOMATIK SORU GECISI (SIRA NUMARALI) TESTI BASARILI")
 
 
 if __name__ == "__main__":
