@@ -5,6 +5,14 @@ hazırlanmış bir öğrenci/öğretmen uygulama çiftidir.
 [CarotOS](https://github.com/MiracLight/CarotOS) dağıtımının bir parçası
 olarak geliştirilmiştir ve dağıtımın ISO görüntüsüne dahildir.
 
+<div align="center">
+<img src="docs/ekran/poligon-ogrenci.webp" alt="CarotOS Poligon öğrenci uygulaması" width="330">
+<img src="docs/ekran/poligon-ogretmen.webp" alt="CarotOS Poligon öğretmen uygulaması" width="330">
+
+*Solda öğrenci, sağda öğretmen uygulaması*
+
+</div>
+
 ## Genel Bakış
 
 Öğretmen uygulaması bir sınıf odası açar ve bir oda kodu ile şifre üretir.
@@ -26,6 +34,62 @@ gerektirmez.
 | tshark | Ağ trafiği çözümleme |
 | ufw | Güvenlik duvarı yapılandırması (savunma görevi) |
 | fail2ban | Saldırı engelleme (savunma görevi) |
+| grep, awk | Günlük dosyası analizi |
+| curl | Web sitesi keşfi |
+| file, base64, tr | Dosya türü, kodlama ve klasik şifreler |
+| CarotPot | Tuzak (honeypot) kayıtlarını okuma |
+
+## Görevler
+
+Uygulamada 21 görev vardır:
+
+**Ağ ve keşif**
+
+- Açık Port Keşfi
+- Servis Sürümü Tespiti
+- Ağ Trafiği Yakalama
+- Gizli Dizin Keşfi
+
+**Parola ve kimlik doğrulama**
+
+- Parola Deneme Saldırısı
+- Parola Özeti Kırma
+- Hash Türü Tanıma
+- SQL Enjeksiyonu
+
+**Savunma**
+
+- Güvenlik Duvarı ile Port Kapatma
+- Otomatik Engelleme Servisi
+
+**Günlük analizi**
+
+- SSH Kaba Kuvvet Kaynağı
+- Ele Geçirilen Hesap Tespiti
+- Web Taraması Tespiti
+- Taramayla Ulaşılan Yol
+- Tuzak Kaydında Kullanıcı Adı Analizi
+- Çok Hizmetli Tarama Tespiti
+
+**Kodlama ve dosya analizi**
+
+- Çok Katmanlı Kodlama Çözme
+- Sezar Şifresi
+- Dosya Türü Doğrulama
+
+**CarotPot (tuzak sistemi)**
+
+- Honeypot Tetikleme
+- Honeypot Raporu Okuma
+
+Görevler her açılışta rastgele içerik üretir (günlük dosyaları, kodlanmış
+mesajlar, sahte siteler, bayraklar) ve doğru cevabı kendisi hesaplar. Bir görev
+türü için birden çok soru tanımlıdır. Öğretmen yeni bir soru atadığında
+bilgisayar bunlardan birini seçer ve numarası tüm sınıfa duyurulur; böylece
+herkes aynı soruyu çözer, verisi ise her öğrencinin kendi makinesinde ayrı
+üretilir. Öğretmen uygulamasındaki görev listesinde her görevin amacını,
+kazanımını ve gerçek çalışmada nerede karşılaşıldığını anlatan bir bilgi
+düğmesi bulunur.
 
 ## Gereksinimler
 
@@ -101,6 +165,17 @@ parametrelere göre üretilir.
   şemaları ve kaydedilmiş soruların saklanması.
 - `gecmis_defteri.py` — bireysel modda ilerlemenin yerel olarak
   (`~/.local/share/carotos-poligon/`) saklanması.
+- `varyantlar.py`, `varyant_gunluk.py`, `varyant_sifre.py` — görev türleri için
+  soru varyantları ve her varyantın doğru cevabının hesaplanması.
+- `uretilen_gorevler.py` — rastgele içerik üreten görevlerin üreteçleri.
+- `tuzak_laboratuvari.py` — öğrencinin kendi makinesinde, sistemdeki gerçek
+  CarotPot'tan ayrı çalışan bir tuzak örneği. Yalnızca loopback adresinde
+  dinler, görev bitince kapatılır ve geçici dizinini siler.
+- `gorev_bilgi.py` — öğretmen uygulamasındaki görev bilgi metinleri.
+- `gorunum_ayari.py` — açık/koyu görünüm seçimi ve Poligon'a özgü ek stiller.
+- `tema.py` — CarotOS uygulamalarının ortak grafit teması. CarotOS'ta
+  `/opt/carotos/ortak/tema.py` altındadır; bu depoda uygulamanın tek başına
+  çalışabilmesi için bir kopyası bulunur.
 
 ## Güvenlik Notları
 
@@ -164,6 +239,62 @@ no task requires network access to a real system.
 | tshark | Network traffic analysis |
 | ufw | Firewall configuration (defense task) |
 | fail2ban | Intrusion prevention (defense task) |
+| grep, awk | Log file analysis |
+| curl | Web site discovery |
+| file, base64, tr | File types, encodings and classic ciphers |
+| CarotPot | Reading honeypot logs |
+
+## Tasks
+
+The application has 21 tasks:
+
+**Network and reconnaissance**
+
+- Open Port Discovery
+- Service Version Detection
+- Network Traffic Capture
+- Hidden Directory Discovery
+
+**Passwords and authentication**
+
+- Password Guessing Attack
+- Password Hash Cracking
+- Hash Type Identification
+- SQL Injection
+
+**Defense**
+
+- Closing a Port with a Firewall
+- Automatic Ban Service
+
+**Log analysis**
+
+- SSH Brute-Force Source
+- Compromised Account Identification
+- Web Scan Detection
+- Path Reached by a Scan
+- Username Analysis in Honeypot Logs
+- Multi-Service Scan Detection
+
+**Encoding and file analysis**
+
+- Multi-Layer Decoding
+- Caesar Cipher
+- File Type Verification
+
+**CarotPot (honeypot)**
+
+- Triggering a Honeypot
+- Reading a Honeypot Report
+
+Every task generates random content each time it opens (log files, encoded
+messages, fake sites, flags) and works out the correct answer itself. A task
+type has several different questions. When the teacher assigns a new
+question, the computer picks one of them and announces its number to the
+whole class, so everyone solves the same question while each student's data
+is still generated separately on their own machine. In the teacher
+application, every task in the list has an info button that explains its
+purpose, what it teaches and where it appears in real work.
 
 ## Requirements
 
@@ -241,6 +372,19 @@ the same parameters.
   Create Question screen and storage of saved questions.
 - `gecmis_defteri.py` — local storage of individual-mode progress
   (`~/.local/share/carotos-poligon/`).
+- `varyantlar.py`, `varyant_gunluk.py`, `varyant_sifre.py` — question variants
+  for the task types and the calculation of each variant's correct answer.
+- `uretilen_gorevler.py` — generators for tasks that produce random content.
+- `tuzak_laboratuvari.py` — a honeypot instance that runs on the student's own
+  machine, separate from the system's real CarotPot. It listens only on
+  loopback, is shut down when the task ends and deletes its temporary
+  directory.
+- `gorev_bilgi.py` — the task info texts in the teacher application.
+- `gorunum_ayari.py` — the dark/light appearance choice and Poligon-specific
+  extra styles.
+- `tema.py` — the shared graphite theme of CarotOS applications. In CarotOS it
+  lives at `/opt/carotos/ortak/tema.py`; a copy is kept in this repository so
+  the application can run on its own.
 
 ## Security Notes
 
