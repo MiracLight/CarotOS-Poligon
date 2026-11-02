@@ -43,10 +43,11 @@ def main():
                             "durum": "basladi", "sure_sn": 0}, "POST")
 
         print("=== TEST 1: öğretmen -> ayşe (birebir) ===")
-        istek("/mesaj", {"ogrenci": "ayse", "kimden": "ogretmen",
-                         "metin": "Kullanıcı adını unutma"}, "POST")
-        ayse_msg = istek("/sohbet?ogrenci=ayse&son_no=0")["mesajlar"]
-        mehmet_msg = istek("/sohbet?ogrenci=mehmet&son_no=0")["mesajlar"]
+        # Ogretmen mesajlari surec icinden gider (oda.mesaj_ekle); HTTP /mesaj ve
+        # /sohbet oda sifresi ister.
+        oda.mesaj_ekle("ayse", "ogretmen", "Kullanıcı adını unutma")
+        ayse_msg = istek(f"/sohbet?ogrenci=ayse&son_no=0&sifre={s}")["mesajlar"]
+        mehmet_msg = istek(f"/sohbet?ogrenci=mehmet&son_no=0&sifre={s}")["mesajlar"]
         print(f"  ayşe: {[m['metin'] for m in ayse_msg]}")
         print(f"  mehmet: {[m['metin'] for m in mehmet_msg]}")
         assert len(ayse_msg) == 1 and ayse_msg[0]["metin"] == "Kullanıcı adını unutma"
@@ -54,9 +55,9 @@ def main():
         print("  ✓ sadece ayşe aldı")
 
         print("\n=== TEST 2: ayşe geri yazıyor (çift yön) ===")
-        istek("/mesaj", {"ogrenci": "ayse", "kimden": "ogrenci",
+        istek("/mesaj", {"ogrenci": "ayse", "sifre": s,
                          "metin": "Takıldım, port neydi?"}, "POST")
-        ayse_msg = istek("/sohbet?ogrenci=ayse&son_no=0")["mesajlar"]
+        ayse_msg = istek(f"/sohbet?ogrenci=ayse&son_no=0&sifre={s}")["mesajlar"]
         print(f"  ayşe sohbeti: {[(m['kimden'], m['metin']) for m in ayse_msg]}")
         assert len(ayse_msg) == 2
         assert ayse_msg[1]["kimden"] == "ogrenci"
@@ -64,24 +65,22 @@ def main():
 
         print("\n=== TEST 3: mesajlar BİRİKİYOR (tek seferlik değil) ===")
         # Aynı sohbeti tekrar çek -- mesajlar hâlâ orada olmalı
-        ayse_msg_tekrar = istek("/sohbet?ogrenci=ayse&son_no=0")["mesajlar"]
+        ayse_msg_tekrar = istek(f"/sohbet?ogrenci=ayse&son_no=0&sifre={s}")["mesajlar"]
         assert len(ayse_msg_tekrar) == 2, "mesajlar kayboldu (tek seferlik davranış)!"
         print("  ✓ ikinci okumada mesajlar hâlâ duruyor")
 
         print("\n=== TEST 4: son_no ile sadece YENİ mesajları çekme ===")
         en_son = ayse_msg[-1]["no"]
-        istek("/mesaj", {"ogrenci": "ayse", "kimden": "ogretmen",
-                         "metin": "Port 2222"}, "POST")
-        yeniler = istek(f"/sohbet?ogrenci=ayse&son_no={en_son}")["mesajlar"]
+        oda.mesaj_ekle("ayse", "ogretmen", "Port 2222")
+        yeniler = istek(f"/sohbet?ogrenci=ayse&son_no={en_son}&sifre={s}")["mesajlar"]
         print(f"  son_no={en_son} sonrası yeni: {[m['metin'] for m in yeniler]}")
         assert len(yeniler) == 1 and yeniler[0]["metin"] == "Port 2222"
         print("  ✓ sadece yeni mesaj döndü (öğrenci sürekli tümünü çekmez)")
 
         print("\n=== TEST 5: tüm sınıfa mesaj ===")
-        istek("/mesaj", {"ogrenci": "tum_sinif", "kimden": "ogretmen",
-                         "metin": "10 dakikanız kaldı"}, "POST")
-        a = istek("/sohbet?ogrenci=ayse&son_no=0")["mesajlar"]
-        m = istek("/sohbet?ogrenci=mehmet&son_no=0")["mesajlar"]
+        oda.mesaj_ekle("tum_sinif", "ogretmen", "10 dakikanız kaldı")
+        a = istek(f"/sohbet?ogrenci=ayse&son_no=0&sifre={s}")["mesajlar"]
+        m = istek(f"/sohbet?ogrenci=mehmet&son_no=0&sifre={s}")["mesajlar"]
         assert any(x["metin"] == "10 dakikanız kaldı" for x in a)
         assert any(x["metin"] == "10 dakikanız kaldı" for x in m)
         print("  ✓ tüm sınıf mesajı hem ayşe'ye hem mehmet'e ulaştı")

@@ -22,6 +22,7 @@ import sys
 import subprocess
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -506,6 +507,13 @@ class PoligonIstemci:
     # ------------------------------------------------------------------
     # Öğretmen sunucusuyla iletişim
     # ------------------------------------------------------------------
+    @staticmethod
+    def _kodla(deger: str) -> str:
+        """URL sorgusuna yazilacak degeri yuzde-kodlar. Kodlanmazsa bosluklu ya da
+        Turkce karakterli bir isim (Sule Ipek) http.client'te InvalidURL /
+        UnicodeEncodeError verir, '&' ve '=' ise sorguyu bozar."""
+        return urllib.parse.quote(deger, safe="")
+
     def _istek(self, yol: str, gövde: dict, yontem: str = "POST") -> tuple[int, dict]:
         veri = json.dumps(gövde).encode("utf-8")
         r = urllib.request.Request(
@@ -632,7 +640,7 @@ class PoligonIstemci:
             return "aktif"
         try:
             _, cevap = self._istek(
-                f"/aktif_mi?ogrenci={self.ogrenci_adi}", {}, "GET",
+                "/aktif_mi?ogrenci=" + self._kodla(self.ogrenci_adi), {}, "GET",
             )
             return "aktif" if cevap.get("aktif", True) else "atildi"
         except OdaKapaliHatasi:
@@ -683,7 +691,9 @@ class PoligonIstemci:
             return []  # bireysel modda öğretmen yok, mesaj gelmez
         try:
             _, cevap = self._istek(
-                f"/sohbet?ogrenci={self.ogrenci_adi}&son_no={self._son_mesaj_no}",
+                "/sohbet?ogrenci=%s&son_no=%d&sifre=%s" % (
+                    self._kodla(self.ogrenci_adi), self._son_mesaj_no,
+                    self._kodla(self.oda_sifre)),
                 {}, "GET",
             )
             mesajlar = cevap.get("mesajlar", [])
@@ -696,11 +706,11 @@ class PoligonIstemci:
     def mesaj_gonder(self, metin: str) -> bool:
         """Öğrenci öğretmene mesaj yazar (çift yönlü sohbet)."""
         try:
-            self._istek("/mesaj", {
+            durum, _ = self._istek("/mesaj", {
                 "ogrenci": self.ogrenci_adi,
-                "kimden": "ogrenci",
+                "sifre": self.oda_sifre,
                 "metin": metin,
             })
-            return True
+            return durum == 200   # sifre/oda hatasinda eskiden hep True donerdi
         except BaglantiHatasi:
             return False

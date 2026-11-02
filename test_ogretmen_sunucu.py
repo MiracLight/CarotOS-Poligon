@@ -76,13 +76,19 @@ def main():
         print("  ✓ tamamlandı durumu ve süre doğru yansıdı")
 
         print("\n--- TEST 5: sohbet mesajı gönderme ve son_no ile çekme ---")
-        istek("/mesaj", {"ogrenci": "ayse", "kimden": "ogretmen",
-                          "metin": "Kullanıcı adını unutma"}, "POST")
-        durum, cevap = istek("/sohbet?ogrenci=ayse&son_no=0")
+        # Ogretmen uygulamasi mesaji surec icinden gonderir (HTTP /mesaj yalnizca
+        # ogrenci istemcisi icindir ve oda sifresi ister).
+        oda.mesaj_ekle("ayse", "ogretmen", "Kullanıcı adını unutma")
+        durum, _ = istek("/sohbet?ogrenci=ayse&son_no=0")
+        assert durum == 403, "sifresiz sohbet okunabildi -- guvenlik hatasi"
+        durum, _ = istek("/mesaj", {"ogrenci": "ayse", "kimden": "ogretmen",
+                                    "metin": "sahte"}, "POST")
+        assert durum == 403, "sifresiz mesaj kabul edildi -- guvenlik hatasi"
+        durum, cevap = istek(f"/sohbet?ogrenci=ayse&son_no=0&sifre={sifre}")
         print(f"  ilk çekme: {cevap}")
         assert any(x["metin"] == "Kullanıcı adını unutma" for x in cevap["mesajlar"])
         en_son = max(x["no"] for x in cevap["mesajlar"])
-        durum, cevap = istek(f"/sohbet?ogrenci=ayse&son_no={en_son}")
+        durum, cevap = istek(f"/sohbet?ogrenci=ayse&son_no={en_son}&sifre={sifre}")
         print(f"  ikinci çekme (son_no={en_son}): {cevap}")
         assert cevap["mesajlar"] == [], "son_no sonrası mesaj olmamalı"
         print("  ✓ mesaj çekildi, son_no ile tekrar çekilmiyor (geçmiş korunuyor)")
